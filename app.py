@@ -9,7 +9,9 @@ from datetime import date, datetime
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'a_very_secret_key_for_dev')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/user_auth.db'
+db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'user_auth.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -189,14 +191,17 @@ def logout():
     return redirect(url_for('login'))
 
 # --- Run ---
+# --- Run ---
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True, use_reloader=False)
-    os.makedirs('instance', exist_ok=True)
+    # make sure the 'instance' directory exists before database init
+    if not os.path.exists('instance'):
+        os.makedirs('instance')
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    # create tables if they don't exist yet
     with app.app_context():
         db.create_all()
-    app.run(host='0.0.0.0', port=port)
+
+    # run on correct port (Render or local)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True, use_reloader=False)
+
