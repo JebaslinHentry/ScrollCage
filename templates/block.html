@@ -1,0 +1,51 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scroll Cage - Stop Scrolling</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</head>
+
+<script>
+    // Optional: after 10 seconds, automatically redirect to dashboard if user hesitates
+    setTimeout(() => {
+        alert("Time's up! Back to work!");
+        window.location.href = "{{ url_for('dashboard') }}";
+    }, 10000); // 10 seconds timer
+
+    // Optional: shake input box for fun effect if empty
+    const form = document.querySelector('form');
+    const input = document.querySelector('input[name="task"]');
+
+    form.addEventListener('submit', function(e){
+        if(input.value.trim() === ''){
+            e.preventDefault();
+            input.style.border = "3px solid yellow";
+            input.style.animation = "shake 0.3s";
+            setTimeout(() => input.style.animation = "", 300);
+        }
+    });
+</script>
+
+<style>
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
+}
+</style>
+
+<body>
+    <h2>Scroll Cage Alert!</h2>
+    <p><strong>{{ roast }}</strong></p>
+    <p>Blocked site: {{ site_name }}</p>
+    <form method="POST">
+        <label>What should you be doing instead?</label><br>
+        <input type="text" name="task" placeholder="Type your real task..." required><br><br>
+        <button type="submit">Submit & Return</button>
+    </form>
+</body>
+</html>

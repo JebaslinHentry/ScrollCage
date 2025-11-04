@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scroll Cage - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <header class="nav">
+        <h1>🌀 ScrollCage</h1>
+        <div class="nav-links">
+            <span>Welcome, {{ username }}</span>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </header>
+
+    <main class="dashboard-container">
+
+        <!-- 🔥 Focus Streak Card -->
+        <section class="card streak-card">
+            <h2>🔥 Focus Streak</h2>
+            <p>
+                You’ve avoided doom-scrolling for
+                <b id="streakCount">0</b>
+                day{{ '' if streak == 1 else 's' }} straight.
+            </p>
+        </section>
+
+        <!-- 🕒 Focus Time Saved -->
+        <section class="card focus-card">
+            <h2>🕒 Focus Time Saved</h2>
+            <p>
+                You’ve been focused for <b id="focusTimer">00:00:00</b>.
+            </p>
+        </section>
+
+        <!-- 📊 Chart Card -->
+        <section class="card">
+            <h2>Your Scroll Stats</h2>
+            {% if attempts %}
+                <canvas id="scrollChart"></canvas>
+            {% else %}
+                <p>No scroll attempts yet. Keep that streak going 🔥</p>
+            {% endif %}
+        </section>
+
+        <!-- 📜 Table Card -->
+        <section class="card table-card">
+            <h2>Scroll History</h2>
+            {% if attempts %}
+                <table>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Site</th>
+                        <th>Roast</th>
+                        <th>Task You Entered</th>
+                    </tr>
+                    {% for a in attempts %}
+                    <tr>
+                        <td>{{ a.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>{{ a.site_name }}</td>
+                        <td>{{ a.roast_given }}</td>
+                        <td>{{ a.task_entered }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            {% else %}
+                <p>No attempts logged.</p>
+            {% endif %}
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>Built to save your attention — Scroll Cage © 2025</p>
+    </footer>
+
+    <!-- JS: streak + focus timer + chart -->
+    <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+        // ---- Animated Streak Counter ----
+        const streakTarget = Number('{{ streak if streak is defined else 0 }}') || 0;
+        const streakDisplay = document.getElementById('streakCount');
+        if (streakDisplay) {
+            let count = 0;
+            const animateStreak = () => {
+                if (count < streakTarget) {
+                    count++;
+                    streakDisplay.textContent = count;
+                    requestAnimationFrame(animateStreak);
+                } else {
+                    streakDisplay.textContent = streakTarget;
+                }
+            };
+            animateStreak();
+        }
+
+        // ---- Focus Timer ----
+        let focusSeconds = Number('{{ focus_seconds if focus_seconds is defined else 0 }}') || 0;
+        const focusTimerDisplay = document.getElementById('focusTimer');
+
+        function formatTime(s) {
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = s % 60;
+            return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+        }
+
+        function updateFocusTimer() {
+            focusTimerDisplay.textContent = formatTime(focusSeconds);
+            focusSeconds++;
+            setTimeout(updateFocusTimer, 1000);
+        }
+
+        if (focusTimerDisplay) {
+            updateFocusTimer();
+        }
+
+        // ---- Scroll Attempts Chart ----
+        let labels = [];
+        let values = [];
+        try {
+            labels = JSON.parse('{{ labels | tojson | safe }}');
+            values = JSON.parse('{{ values | tojson | safe }}');
+        } catch (e) {
+            labels = [];
+            values = [];
+        }
+
+        const canvas = document.getElementById('scrollChart');
+        if (canvas && labels.length > 0) {
+            const ctx = canvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Scroll Attempts per Site',
+                        data: values,
+                        backgroundColor: 'rgba(255,76,76,0.7)',
+                        borderColor: 'rgba(255,76,76,1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: { scales: { y: { beginAtZero: true } } }
+            });
+        }
+    });
+    </script>
+</body>
+</html>
