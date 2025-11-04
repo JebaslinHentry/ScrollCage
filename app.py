@@ -9,7 +9,7 @@ from datetime import date, datetime
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'a_very_secret_key_for_dev')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///user_auth.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/user_auth.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -193,6 +193,8 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True, use_reloader=False)
+    os.makedirs('instance', exist_ok=True)
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     with app.app_context():
