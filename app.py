@@ -9,9 +9,15 @@ from datetime import date, datetime
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'a_very_secret_key_for_dev')
 
-db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'user_auth.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+# choose writable location depending on environment
+if os.environ.get('RENDER'):
+    # Render's writable tmp directory
+    db_path = '/tmp/user_auth.db'
+else:
+    # Local absolute path
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'user_auth.db')
 
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
