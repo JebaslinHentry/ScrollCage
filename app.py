@@ -7,7 +7,8 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
+app.secret_key = os.environ.get("SECRET_KEY", "dev_secret_key_123")
+
 
 # create instance folder if missing
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -96,18 +97,24 @@ def login():
         if user and check_password_hash(user.password, password):
             session["user_id"] = user.id
             session["username"] = user.username
+            flash("Login successful!", "success")
             return redirect(url_for("dashboard"))
-
-        flash("Invalid username or password", "error")
-        return redirect(url_for("login"))
+        else:
+            flash("Invalid username or password.", "error")
+            return redirect(url_for("login"))
 
     return render_template("login.html")
+
 
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    attempts = Attempt.query.filter_by(user_id=session["user_id"]).order_by(Attempt.timestamp.desc()).all()
+    # fetch all attempts for this user
+    attempts = Attempt.query.filter_by(
+        user_id=session["user_id"]
+    ).order_by(Attempt.timestamp.desc()).all()
 
+    # count scrolls per site for the chart
     site_counts = {}
     for a in attempts:
         if a.site_name:
@@ -116,6 +123,7 @@ def dashboard():
     labels = list(site_counts.keys()) or ["No Data"]
     values = list(site_counts.values()) or [0]
 
+    # streak logic
     unique_days = {a.timestamp.date() for a in attempts}
     streak = 0
     if unique_days:
@@ -130,14 +138,21 @@ def dashboard():
             if streak > 730:
                 break
 
+    # focus timer logic
     session_time = session.get("last_scroll_time")
     if session_time:
         last_focus_start = datetime.fromisoformat(session_time)
     else:
-        last_attempt = Attempt.query.filter_by(user_id=session["user_id"]).order_by(Attempt.timestamp.desc()).first()
+        last_attempt = Attempt.query.filter_by(
+            user_id=session["user_id"]
+        ).order_by(Attempt.timestamp.desc()).first()
         last_focus_start = last_attempt.timestamp if last_attempt else None
 
-    focus_seconds = int((datetime.utcnow() - last_focus_start).total_seconds()) if last_focus_start else 0
+    if last_focus_start:
+        now = datetime.utcnow()
+        focus_seconds = int((now - last_focus_start).total_seconds())
+    else:
+        focus_seconds = 0
 
     return render_template(
         "dashboard.html",
